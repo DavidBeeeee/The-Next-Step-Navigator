@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bee's AI | Digital Implementation Partner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0f1a;
+            --card: #151c2c;
+            --card2: #1e293b;
+            --border: #2e4460;
+            --cream: #f0f9ff;
+            --soft: #bae6fd;
+            --muted: #64748b;
+            --teal: #2dd4bf;
+            --cyan: #67e8f9;
+            --amber: #f59e0b;
+            --green: #4ade80;
+            --glow: rgba(45, 212, 191, 0.4);
+        }
+
+        * { box-sizing: border-box; }
+        body { background: var(--bg); color: var(--cream); font-family: 'DM Sans', sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
+
+        #app { min-height: 100vh; padding: 40px 20px; position: relative; }
+        #app::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 10% 10%, rgba(45,212,191,0.08) 0%, transparent 40%),
+                        radial-gradient(circle at 90% 90%, rgba(103,232,249,0.08) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        .container { max-width: 850px; margin: 0 auto; position: relative; z-index: 1; }
+
+        /* --- Screens --- */
+        .screen { display: none; width: 100%; }
+        .screen.active { 
+            display: block; 
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Components --- */
+        .wizard-card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 48px; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); margin-bottom: 24px; }
+        .tagline { font-family: 'Space Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--teal); margin-bottom: 12px; }
+        h1, h2, h3 { font-family: 'Bebas Neue', sans-serif; margin: 0 0 24px; letter-spacing: 0.02em; line-height: 1; }
+        h1 { font-size: clamp(48px, 10vw, 72px); text-shadow: 0 0 30px rgba(45,212,191,0.2); }
+        h2 { font-size: 36px; color: var(--cream); }
+        .desc { font-size: 18px; color: var(--muted); line-height: 1.6; margin-bottom: 32px; }
+
+        .bubble-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 32px; }
+        .bubble {
+            background: var(--card2); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: space-between;
+        }
+        .bubble:hover { border-color: var(--teal); background: rgba(45, 212, 191, 0.08); transform: translateX(6px); }
+        .bubble-label { font-weight: 600; font-size: 16px; color: var(--soft); }
+        .bubble-depth { font-family: 'Space Mono', monospace; font-size: 10px; padding: 4px 10px; border-radius: 6px; background: rgba(0,0,0,0.3); color: var(--muted); border: 1px solid var(--border); }
+
+        .btn-primary {
+            display: block; width: 100%; background: linear-gradient(135deg, var(--teal), var(--cyan));
+            color: #0b0f1a; font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 0.1em;
+            border: none; border-radius: 14px; padding: 20px; cursor: pointer; transition: all 0.3s;
+            text-align: center; text-transform: uppercase;
+        }
+        .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(45,212,191,0.4); }
+
+        .btn-secondary {
+            display: block; width: 100%; background: transparent; border: 1px solid var(--border);
+            color: var(--muted); font-family: 'Bebas Neue', sans-serif; font-size: 18px;
+            letter-spacing: 0.05em; border-radius: 14px; padding: 12px; cursor: pointer; transition: all 0.2s;
+            text-align: center; text-transform: uppercase; margin-top: 12px; text-decoration: none;
+        }
+        .btn-secondary:hover { border-color: var(--soft); color: var(--soft); }
+
+        .btn-back { background: none; border: none; color: var(--muted); cursor: pointer; font-family: 'Space Mono', monospace; font-size: 11px; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-back:hover { color: var(--soft); }
+
+        /* --- Roadmap UI --- */
+        .priority-section { margin-bottom: 40px; padding: 30px; background: rgba(245, 158, 11, 0.05); border: 1px solid var(--amber); border-radius: 20px; position: relative; }
+        .priority-badge { position: absolute; top: -12px; left: 24px; background: var(--amber); color: #000; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; padding: 4px 12px; border-radius: 4px; animation: pulse-glow 2s infinite ease-in-out; }
+        @keyframes pulse-glow { 0%, 100% { opacity: 1; filter: drop-shadow(0 0 0px var(--amber)); } 50% { opacity: 0.8; filter: drop-shadow(0 0 10px var(--amber)); } }
+
+        .matrix-list { display: flex; flex-direction: column; gap: 12px; }
+        .system-row { background: var(--card2); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: space-between; position: relative; }
+        .system-row:hover { border-color: var(--cyan); background: rgba(103, 232, 249, 0.05); transform: translateX(6px); }
+        .new-badge { position: absolute; top: 10px; right: 40px; background: var(--cyan); color: #000; font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-family: 'Space Mono'; }
+
+        .system-info { display: flex; flex-direction: column; gap: 4px; }
+        .row-name { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--cream); }
+        .row-desc { font-size: 12px; color: var(--muted); line-height: 1.4; max-width: 90%; }
+        .row-arrow { color: var(--cyan); font-weight: bold; }
+
+        /* --- Deep Dive --- */
+        .dive-section { margin-bottom: 32px; }
+        .dive-label { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--cyan); margin-bottom: 12px; display: block; text-transform: uppercase; letter-spacing: 0.1em; }
+        .action-item { display: flex; gap: 16px; margin-bottom: 12px; padding: 16px; background: rgba(255,255,255,0.03); border-radius: 12px; align-items: flex-start; cursor: pointer; transition: background 0.2s; }
+        .action-item.done { background: rgba(74, 222, 128, 0.05); }
+        .action-check { width: 22px; height: 22px; border: 2px solid var(--border); border-radius: 6px; flex-shrink: 0; margin-top: 2px; position: relative; }
+        .action-item.done .action-check { background: var(--teal); border-color: var(--teal); }
+        .action-item.done .action-check::after { content: '✓'; position: absolute; left: 4px; top: -2px; color: #000; font-weight: bold; }
+        .action-text { font-size: 15px; color: var(--soft); line-height: 1.5; }
+        .action-item.done .action-text { text-decoration: line-through; opacity: 0.5; }
+        .tech-pill { display: inline-block; background: var(--card2); border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-right: 8px; margin-bottom: 8px; color: var(--muted); }
+
+        /* --- Help Button --- */
+        .btn-help {
+            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+            background: rgba(103, 232, 249, 0.05); border: 1px solid rgba(103, 232, 249, 0.3);
+            color: var(--cyan); font-family: 'Space Mono', monospace;
+            font-size: 12px; padding: 12px 24px; border-radius: 50px;
+            cursor: pointer; transition: all 0.2s; text-decoration: none;
+            margin-top: 24px; width: 100%;
+        }
+        .btn-help:hover { background: rgba(103, 232, 249, 0.1); border-color: var(--cyan); }
+
+        /* --- Funnel Map --- */
+        .map-container { background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 20px; padding: 40px 10px; margin-bottom: 32px; position: relative; overflow-x: auto; }
+        .node text { font-family: 'Space Mono', monospace; font-size: 7px; fill: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; pointer-events: none; }
+        .path-line { fill: none; stroke: var(--border); stroke-width: 2; stroke-linecap: round; }
+        .path-active { fill: none; stroke: var(--teal); stroke-width: 2.5; stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawLine 2s forwards; }
+        @keyframes drawLine { to { stroke-dashoffset: 0; } }
+        .node-circle { transition: all 0.4s; fill: var(--bg); stroke: var(--border); cursor: pointer; }
+        .node.completed .node-circle { fill: var(--teal); stroke: var(--teal); filter: drop-shadow(0 0 8px var(--teal)); }
+        .node.gap .node-circle { fill: var(--amber); stroke: var(--amber); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { filter: drop-shadow(0 0 0px var(--amber)); transform: scale(1); } 50% { filter: drop-shadow(0 0 10px var(--amber)); transform: scale(1.1); } }
+
+        .output-card { background: var(--card2); border: 1px solid var(--border); border-radius: 16px; padding: 32px; margin-bottom: 24px; }
+        pre { white-space: pre-wrap; font-size: 14px; line-height: 1.7; color: var(--soft); background: rgba(0,0,0,0.4); padding: 24px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        .copy-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 10px; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-family: 'Space Mono'; }
+
+        .input-text { width: 100%; background: var(--card2); border: 1px solid var(--border); border-radius: 16px; padding: 20px; color: var(--cream); font-family: inherit; font-size: 18px; outline: none; margin-bottom: 20px; transition: all 0.2s; }
+        .input-text:focus { border-color: var(--teal); }
+
+        #tooltip { position: fixed; background: var(--card2); border: 1px solid var(--teal); padding: 12px 16px; border-radius: 8px; font-size: 12px; color: var(--cream); pointer-events: none; z-index: 1000; display: none; max-width: 200px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .progress-bar { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; margin-bottom: 48px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--teal), var(--cyan)); width: 0%; transition: width 0.4s ease; }
+
+        /* --- Celebration --- */
+        #celebration { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; display: none; text-align: center; }
+        .celeb-box { background: var(--teal); color: #000; padding: 30px 60px; border-radius: 20px; font-family: 'Bebas Neue'; font-size: 40px; box-shadow: 0 0 50px var(--teal); animation: popUp 0.5s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
+        @keyframes popUp { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div class="container">
+        
+        <!-- INTRO -->
+        <div class="screen active" id="screen-intro">
+            <div class="wizard-card">
+                <div class="tagline">Implementation Partner v3.3</div>
+                <h1>BEE'S AI</h1>
+                <p class="desc">Identify your business bottlenecks using the Bee Formula hierarchy. We build infrastructure first and traffic last.</p>
+                
+                <div id="resume-container" style="display:none; margin-bottom:24px;">
+                    <button class="btn-primary" style="margin-bottom:12px;" onclick="resumeAudit()">RESUME SAVED PLAN</button>
+                    <button class="btn-secondary" onclick="resetApp()">START FRESH AUDIT</button>
+                </div>
+
+                <div id="start-inputs">
+                    <input type="text" id="user-name" class="input-text" placeholder="First Name..." onkeydown="if(event.key==='Enter')startDiagnostic()">
+                    <input type="text" id="user-niche" class="input-text" placeholder="Your Niche (e.g. Health Coach)..." onkeydown="if(event.key==='Enter')startDiagnostic()">
+                    <button class="btn-primary" onclick="startDiagnostic()">START BUSINESS AUDIT</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUESTIONS -->
+        <div class="screen" id="screen-questions">
+            <button class="btn-back" onclick="goBack()">< Back</button>
+            <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+            <div class="wizard-card">
+                <div class="tagline" id="q-category">Audit Step</div>
+                <h2 id="q-text">Loading...</h2>
+                <p id="q-hint" style="font-size: 13px; color: var(--muted); margin-bottom: 24px;"></p>
+                <div class="bubble-grid" id="bubble-container"></div>
+            </div>
+        </div>
+
+        <!-- RESULTS -->
+        <div class="screen" id="screen-results">
+            <div class="wizard-card">
+                <div class="tagline">Audit Analysis</div>
+                <h2>The Bee Formula Roadmap</h2>
+                <div class="map-container" id="funnel-map"></div>
+                <div class="sandwich-box" id="diagnosis-sandwich"></div>
+                <button class="btn-primary" onclick="showRoadmap()">CHOOSE MY FOCUS</button>
+            </div>
+        </div>
+
+        <!-- ROADMAP -->
+        <div class="screen" id="screen-roadmap">
+            <div class="wizard-card">
+                <div class="tagline">Interactive Roadmap</div>
+                <h2>CHOOSE YOUR FOCUS</h2>
+                <div id="priority-roadmap"></div>
+                <div class="matrix-list" id="matrix-list"></div>
+                <button class="btn-primary" style="margin-top:40px; background:#1e293b; color:#64748b; border:1px solid #2e4460;" onclick="showScreen('screen-assets')">VIEW FULL PROFILE</button>
+            </div>
+        </div>
+
+        <!-- DEEP DIVE -->
+        <div class="screen" id="screen-deep-dive">
+            <div class="wizard-card" id="deep-dive-content"></div>
+        </div>
+
+        <!-- ASSETS -->
+        <div class="screen" id="screen-assets">
+            <div class="wizard-card">
+                <div class="tagline">Final Summary</div>
+                <h2>Business Profile</h2>
+                <div class="output-card"><pre id="profile-text"></pre></div>
+                <button class="btn-primary" onclick="resetApp()">NEW AUDIT</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="celebration"><div class="celeb-box">LEVEL UP!</div></div>
+<div id="tooltip"></div>
+
+<script>
+    const STORAGE_KEY = 'bees_ai_v33_persistence';
+
+    // TASK LEVELS: The 11 Strategic Milestones
+    const TASK_DATA = {
+        storefront: [
+            { level: 1, title: 'Establish a Linktree', goal: 'Establish a professional social bio.', why: 'A bio profile is the "ID Card" of your business.', tech: ['Linktree', 'Beacons'], steps: ['Audit your top 3 value links.', 'Choose a clear, high-contrast headshot.', 'Add one link specifically for "Interest Collection".'], prompt: 'Act as my Branding Partner. Niche: [NICHE]. Provide a conversion-optimized Linktree layout with 3 essential links.' },
+            { level: 2, title: 'Launch a Landing Page / Website', goal: 'A focused single destination.', why: 'A dedicated page increases trust and removes distractions.', tech: ['Carrd', 'Wix', 'Framer'], steps: ['Select a "Landing Page" template.', 'Craft a "Point A to Point B" transformation headline.', 'Embed a simple lead capture form.'], prompt: 'Act as my Conversion Architect. Niche: [NICHE]. Provide a technical wireframe for a single-page landing page focusing on structural hierarchy.' },
+            { level: 3, title: 'Full Funnel Software Integration', goal: 'A multi-step sales machine.', why: 'Full funnel software allows for upsells and complex automation.', tech: ['Systeme.io', 'Clickfunnels', 'GHL'], steps: ['Map the user path from opt-in to checkout.', 'Configure your first automated email trigger.', 'Set up a thank you page with a next-step offer.'], prompt: 'Act as my Funnel Consultant. Niche: [NICHE]. Provide a structural wireframe for a multi-step sales funnel using high-level funnel logic.' }
+        ],
+        mvo: [
+            { level: 2, title: 'Minimum Viable Offer (MVO)', goal: 'Paid proof of concept.', why: 'Proof is profit. A paid win builds authority faster than free advice.', tech: ['Stripe', 'Gumroad'], steps: ['Identify a small, specific problem to solve for $27-$97.', 'Create a simple checkout link.', 'Offer it to your warmest 10 leads.'], prompt: 'Generate an MVO strategy for my [NICHE] business. What is a specific $47 "Quick Win" offer I can launch today?' }
+        ],
+        signature: [
+            { level: 2, title: 'Signature Offer Architecture', goal: 'Validating your core system.', why: 'This is the main product that builds your business legacy.', tech: ['Skool', 'Kajabi'], steps: ['Outline a 4-week transformation curriculum.', 'Choose a core delivery method (Course or Group).', 'Enroll 3 beta testers at a discount.'], prompt: 'Outline a Signature Offer curriculum for [NICHE]. Focus on a 12-week transformation path.' }
+        ],
+        leadmagnet: [
+            { level: 1, title: 'The Checklist Lead Magnet', goal: 'A high-speed "Quick Win".', why: 'A checklist is the fastest way to prove you can solve a problem.', tech: ['Canva', 'Google Docs'], steps: ['Choose one problem that takes 5 mins to solve.', 'Draft 5 bullet points of advice.', 'Format as a 1-page PDF.'], prompt: 'Generate 3 high-value checklist titles for [NICHE]. What is the one specific "Quick Win" I can deliver?' },
+            { level: 2, title: 'Authority E-book / Guide', goal: 'Establishing deeper authority.', why: 'Guides show your depth and method.', tech: ['Canva', 'Notion'], steps: ['Outline 5 chapters of your transformation.', 'Write 800-1200 words of actionable tips.', 'Create a high-impact cover image.'], prompt: 'Outline a 5-page authority guide for the [NICHE] niche. List the milestones I help them achieve.' },
+            { level: 3, title: 'High-Conversion Workshop', goal: 'The ultimate conversion event.', why: 'Workshops allow you to sell "One to Many" live.', tech: ['Zoom', 'Loom'], steps: ['Outline a 15-minute high-value training.', 'Set up a registration form.', 'Script the transition from teaching to offer.'], prompt: 'Outline a high-value masterclass training for [NICHE]. How do I transition to the paid offer?' }
+        ],
+        emails: [
+            { level: 1, title: 'Draft a DM Follow-up Script', goal: 'Personal manual outreach.', why: 'Personal DMs build a connection that automation cannot.', tech: ['Notes'], steps: ['Write an empathy-first opening line.', 'Ask a qualifying "Gap" question.', 'End with an invitation to the next step.'], prompt: 'Provide a non-salesy, high-empathy DM follow-up script for prospects in [NICHE].' },
+            { level: 2, title: 'Automatic Welcome Email', goal: 'The digital handshake.', why: 'Immediate response is the key to lead retention.', tech: ['Systeme', 'Mailchimp'], steps: ['Set up a trigger for "New Subscriber".', 'Draft a "Value First" greeting.', 'Attach or link your lead magnet.'], prompt: 'Write a warm, high-converting Welcome Email for a [NICHE] business.' },
+            { level: 3, title: 'Multi-part Email Sequence', goal: 'The automated profit bridge.', why: 'Sequences educate the customer so the sale is easy.', tech: ['ConvertKit', 'GHL'], steps: ['Map out a 5-day educational journey.', 'Write emails for Pain, Logic, and Results.', 'Include a strong CTA in every 2nd email.'], prompt: 'Outline a 5-part email sequence to move a lead from interest to a sales call in [NICHE].' }
+        ],
+        groupcall: [
+            { level: 1, title: '1-on-1 Discovery Call Script', goal: 'Direct conversion via conversation.', why: 'Conversations are the fastest path to high-ticket sales.', tech: ['Calendly', 'Zoom'], steps: ['Create a booking link (Calendly).', 'Write a 15-minute qualifying script.', 'Ask for the bottleneck before the call.'], prompt: 'Provide a high-converting 15-minute discovery call script for [NICHE] focused on uncovering pain points.' },
+            { level: 2, title: 'The Free Community Engine', goal: 'An owned audience home.', why: 'Communities build long-term loyalty and recurring value.', tech: ['Facebook', 'Skool'], steps: ['Define the "Big Promise" of the group.', 'Choose a platform.', 'Post 3 pieces of "Entry Value" content.'], prompt: 'Provide a structural plan for a free community in [NICHE]. What is the "Big Promise"?' }
+        ],
+        traffic: [
+            { level: 1, title: '7-Video Social Strategy', goal: 'Consistent audience signaling.', why: '7 videos give the algorithm enough data to find your audience.', tech: ['TikTok', 'Instagram'], steps: ['Draft 7 short hook-driven scripts.', 'Post once per day for 7 days.', 'End every video with an "Open Loop".'], prompt: 'Create a hook-driven content plan for my first 7 videos in the [NICHE] niche.' },
+            { level: 2, title: 'The 5E Content Framework', goal: 'Engineered authority building.', why: 'The 5E framework turns viewers into believers.', tech: ['CapCut', 'Metricool'], steps: ['Map content to Education, Emotion, and Empathy.', 'Batch 12 videos at a time.', 'Check metrics to see which hook wins.'], prompt: 'How to apply the 5E framework to social content for a [NICHE] business.' }
+        ],
+        highticket: [
+            { level: 2, title: 'High Ticket Backend Design', goal: 'Elite VIP support offer.', why: 'This captures the 5% of people who want results the fastest.', tech: ['Zoom', '1-on-1 Support'], steps: ['Design a VIP experience with 1-1 access.', 'Create a high-ticket price point ($2k+).', 'Add an application form to qualify leads.'], prompt: 'Design a High Ticket VIP package for my [NICHE] brand. What unique support assets should I include?' }
+        ],
+        aiaas: [
+            { level: 2, title: 'AI Automation & Scaling', goal: 'Removing self as bottleneck.', why: 'Automation scales your impact without scaling your hours.', tech: ['ChatGPT', 'Zapier', 'Make.com'], steps: ['Audit 3 repetitive tasks.', 'Map a Zapier workflow.', 'Deploy a custom AI agent.'], prompt: 'Help me automate my business using AI agents for [NICHE].' }
+        ]
+    };
+
+    const QUESTIONS = [
+        { id: 'storefront', category: 'Destination', text: 'Digital Storefront status?', hint: 'Foundation: Where people find you.', desc: 'Storefront setup.', options: [{ label: 'Nothing', depth: 0, retail: 'No address.' }, { label: 'Linktree', depth: 1, retail: 'Social bio only.' }, { label: 'Landing Page', depth: 2, retail: 'Pro address.' }, { label: 'Full Funnel', depth: 3, retail: 'Skyscraper.' }], required: 2 },
+        { id: 'mvo', category: 'Sampling', text: 'Minimum Viable Offer (MVO)?', hint: 'The Trust Bridge: Small paid wins.', desc: 'Low-ticket entry.', options: [{ label: 'No MVO', depth: 0, retail: 'Only big items.' }, { label: 'Yes / Small Paid Offer', depth: 2, retail: 'Proof of value.' }], required: 2 },
+        { id: 'signature', category: 'Core Offer', text: 'Signature Offer status?', hint: 'Inventory: Your main product.', desc: 'Main problem-solver.', options: [{ label: 'Nothing / Idea', depth: 0, retail: 'Empty shelves.' }, { label: 'Validated Offer', depth: 2, retail: 'Best-seller.' }], required: 2 },
+        { id: 'leadmagnet', category: 'Incentive', text: 'Lead incentive status?', hint: 'The Free Sample.', desc: 'Free win giveaway.', options: [{ label: 'Nothing', depth: 0, retail: 'Zero return.' }, { label: 'Checklist', depth: 1, retail: 'Flyer.' }, { label: 'E-book', depth: 2, retail: 'Guide.' }, { label: 'Workshop', depth: 3, retail: 'Seminar.' }], required: 2 },
+        { id: 'emails', category: 'Welcome', text: 'Follow-up automation?', hint: 'The Greeting.', desc: 'Automated handshake.', options: [{ label: 'Silence', depth: 0, retail: 'No hello.' }, { label: 'Manual DMs', depth: 1, retail: 'Slow follow.' }, { label: 'Welcome Email', depth: 2, retail: 'Quick nod.' }, { label: 'Multi-part Sequence', depth: 3, retail: 'Tour guide.' }], required: 2 },
+        { id: 'groupcall', category: 'Lobby', text: 'Where do sign-ups go?', hint: 'Connection.', desc: 'Audience lounge.', options: [{ label: 'Nowhere', depth: 0, retail: 'Buy and leave.' }, { label: '1-on-1 Calls', depth: 1, retail: 'Talk.' }, { label: 'Free Community', depth: 2, retail: 'Clubhouse.' }], required: 1 },
+        { id: 'traffic', category: 'Attention', text: 'Social media frequency?', hint: 'The Billboard.', desc: 'Traffic flow.', options: [{ label: 'Not Posting', depth: 0, retail: 'Blank sign.' }, { label: 'Occasional Posting', depth: 1, retail: 'Corner sign.' }, { label: 'Posting Regularly', depth: 2, retail: 'Highway sign.' }], required: 2 },
+        { id: 'highticket', category: 'Premium', text: 'High Ticket offer?', hint: 'VIP Floor.', desc: 'Elite support.', options: [{ label: 'Nothing', depth: 0, retail: 'No VIP.' }, { label: 'High Ticket', depth: 2, retail: 'Elite floor.' }], required: 1 }
+    ];
+
+    // THE PRIORITY CHAIN: Explicit Order defined by the user
+    const PRIORITY_SEQUENCE = [
+        { id: 'storefront', min: 2, label: 'Landing Page' },
+        { id: 'mvo', min: 2, label: 'Minimum Viable Offer' },
+        { id: 'signature', min: 2, label: 'Signature Offer' },
+        { id: 'leadmagnet', min: 1, label: 'Lead Magnet' },
+        { id: 'emails', min: 2, label: 'Welcome Email' },
+        { id: 'groupcall', min: 2, label: 'Free Group' },
+        { id: 'traffic', min: 1, label: '7 Videos' },
+        { id: 'storefront', min: 3, label: 'Full Funnel' },
+        { id: 'traffic', min: 2, label: '5E Framework' },
+        { id: 'highticket', min: 2, label: 'High Ticket' },
+        { id: 'aiaas', min: 2, label: 'Automation' }
+    ];
+
+    let userProfile = { name: '', niche: '', answers: {}, progress: {}, viewedTasks: [] };
+    let currentQIndex = 0;
+    let criticalStepId = '';
+    let criticalTargetLevel = 0;
+
+    const tooltip = document.getElementById('tooltip');
+
+    function loadData() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) { userProfile = JSON.parse(raw); document.getElementById('resume-container').style.display = 'block'; document.getElementById('start-inputs').style.display = 'none'; }
+    }
+
+    function resumeAudit() {
+        if (Object.keys(userProfile.answers).length === QUESTIONS.length) processResults();
+        else { currentQIndex = Object.keys(userProfile.answers).length; showScreen('screen-questions'); renderQuestion(); }
+    }
+
+    function startDiagnostic() {
+        const n = document.getElementById('user-name').value;
+        const nc = document.getElementById('user-niche').value;
+        if (!n || !nc) return alert("Enter name and niche.");
+        userProfile.name = n; userProfile.niche = nc;
+        saveData(); showScreen('screen-questions'); renderQuestion();
+    }
+
+    function renderQuestion() {
+        const q = QUESTIONS[currentQIndex];
+        document.getElementById('q-category').textContent = q.category;
+        document.getElementById('q-text').textContent = q.text;
+        document.getElementById('q-hint').textContent = q.hint;
+        const c = document.getElementById('bubble-container');
+        c.innerHTML = '';
+        q.options.forEach((opt) => {
+            const b = document.createElement('div'); b.className = 'bubble';
+            b.innerHTML = `<div class="bubble-label">${opt.label}</div><div class="bubble-depth">Lvl ${opt.depth}</div>`;
+            b.onclick = () => { userProfile.answers[q.id] = opt; saveData(); if (++currentQIndex < QUESTIONS.length) renderQuestion(); else processResults(); };
+            c.appendChild(b);
+        });
+        document.getElementById('progress').style.width = `${(currentQIndex / QUESTIONS.length) * 100}%`;
+    }
+
+    function goBack() { if (currentQIndex > 0) { currentQIndex--; renderQuestion(); } else { location.reload(); } }
+
+    function processResults() {
+        showScreen('screen-results');
+        updatePriority();
+        renderMap(); renderSandwich(); renderProfile();
+    }
+
+    function updatePriority() {
+        let firstGap = null;
+        for (let step of PRIORITY_SEQUENCE) {
+            const current = userProfile.answers[step.id]?.depth || 0;
+            if (current < step.min) { firstGap = step; break; }
+        }
+        if (firstGap) {
+            criticalStepId = firstGap.id;
+            criticalTargetLevel = firstGap.min;
+        } else {
+            criticalStepId = 'aiaas';
+            criticalTargetLevel = 2;
+        }
+    }
+
+    function renderMap() {
+        const nodes = [{ id: 'traffic', x: 40, y: 50, label: 'Traffic' }, { id: 'leadmagnet', x: 90, y: 50, label: 'Magnet' }, { id: 'storefront', x: 140, y: 50, label: 'Landing' }, { id: 'crm', x: 190, y: 50, label: 'CRM' }, { id: 'emails', x: 240, y: 50, label: 'Welcome' }, { id: 'groupcall', x: 290, y: 50, label: 'Lobby' }, { id: 'mvo', x: 340, y: 50, label: 'Sample' }, { id: 'signature', x: 390, y: 50, label: 'Core' }, { id: 'highticket', x: 440, y: 50, label: 'Premium' }];
+        let svg = `<svg viewBox="0 0 480 100" style="overflow:visible;">`;
+        let pathD = `M ${nodes[0].x} ${nodes[0].y}`;
+        for (let i = 1; i < nodes.length; i++) pathD += ` C ${nodes[i-1].x + 25} ${nodes[i-1].y}, ${nodes[i-1].x + 25} ${nodes[i].y}, ${nodes[i].x} ${nodes[i].y}`;
+        svg += `<path d="${pathD}" class="path-line" /><path d="${pathD}" class="path-active" />`;
+        nodes.forEach(n => {
+            const qRef = QUESTIONS.find(qi => qi.id === n.id);
+            const status = n.id === criticalStepId ? 'gap' : (userProfile.answers[n.id]?.depth >= (qRef?.required || 2) ? 'completed' : 'locked');
+            svg += `<g class="node ${status}" onmouseover="showTooltip(event, '${qRef?.desc || 'Process Component'}')" onmouseout="hideTooltip()"><circle cx="${n.x}" cy="${n.y}" r="7" class="node-circle" stroke-width="2.5" /><text x="${n.x}" y="${n.y+18}" text-anchor="middle">${n.label}</text></g>`;
+        });
+        document.getElementById('funnel-map').innerHTML = svg + `</svg>`;
+    }
+
+    function renderSandwich() {
+        let completed = QUESTIONS.filter(q => userProfile.answers[q.id]?.depth >= q.required);
+        const topBody = `Excellent start, ${userProfile.name}. Your foundation in ${completed.slice(0,2).map(c=>c.category).join(' and ') || 'vision'} is visible. You're building for scale.`;
+        const midBody = `Mission One: Resolve the ${criticalStepId.toUpperCase()} gap. You currently have a baseline setup. In the Bee Formula, fixing this infrastructure leak is the absolute priority to prevent effort wastage.`;
+        const botBody = `Verdict: Clear this bottleneck and your momentum compounds!`;
+
+        document.getElementById('diagnosis-sandwich').innerHTML = `
+            <div class="sandwich-part part-positive"><div class="sandwich-title title-pos">WORKING WELL</div><div class="sandwich-body">${topBody}</div></div>
+            <div class="sandwich-part part-constructive"><div class="sandwich-title title-con">LEAK DETECTED</div><div class="sandwich-body">${midBody}</div></div>
+            <div class="sandwich-part part-positive"><div class="sandwich-body">${botBody}</div></div>
+        `;
+    }
+
+    function showRoadmap() {
+        showScreen('screen-roadmap');
+        const priArea = document.getElementById('priority-roadmap'); const listArea = document.getElementById('matrix-list');
+        priArea.innerHTML = ''; listArea.innerHTML = '';
+        updatePriority();
+
+        // Priority One Logic
+        const task = (TASK_DATA[criticalStepId] || []).find(t => t.level === criticalTargetLevel);
+        if (task) {
+            const currentLabel = userProfile.answers[criticalStepId]?.label || "Nothing";
+            const taskKey = `${criticalStepId}_${criticalTargetLevel}`;
+            const isNew = !userProfile.viewedTasks.includes(taskKey);
+            priArea.innerHTML = `
+                <div class="priority-section">
+                    <div class="priority-badge">Priority One</div>
+                    <div class="system-row" style="border-color:var(--amber); background:rgba(245, 158, 11, 0.1);" onclick="openDeepDive('${criticalStepId}', ${criticalTargetLevel})">
+                        <div class="system-info">
+                            <div class="row-name">${task.title} ${isNew ? '<span class="new-badge">NEW</span>' : ''}</div>
+                            <div class="row-desc">You have <strong>${currentLabel}</strong>. The next step is <strong>${task.title}</strong> because ${task.why}</div>
+                        </div>
+                        <div class="row-arrow">→</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Other Tasks Logic
+        Object.keys(TASK_DATA).forEach(compId => {
+            if (compId === criticalStepId) return;
+            const currentDepth = userProfile.answers[compId]?.depth || 0;
+            const nextTask = (TASK_DATA[compId] || []).find(t => t.level > currentDepth);
+            if (nextTask) {
+                const taskKey = `${compId}_${nextTask.level}`;
+                const isNew = !userProfile.viewedTasks.includes(taskKey);
+                const row = document.createElement('div'); row.className = 'system-row';
+                row.innerHTML = `<div class="system-info"><div class="row-name">${nextTask.title} ${isNew ? '<span class="new-badge">NEW</span>' : ''}</div><div class="row-desc">You have ${userProfile.answers[compId]?.label || 'Nothing'}. Next: ${nextTask.title}.</div></div><div class="row-arrow">→</div>`;
+                row.onclick = () => openDeepDive(compId, nextTask.level);
+                listArea.appendChild(row);
+            }
+        });
+    }
+
+    function openDeepDive(compId, level) {
+        const task = (TASK_DATA[compId] || []).find(t => t.level === level);
+        if (!task) return showRoadmap();
+        const taskKey = `${compId}_${level}`;
+        if(!userProfile.progress[taskKey]) userProfile.progress[taskKey] = [false, false, false];
+        if(!userProfile.viewedTasks.includes(taskKey)) userProfile.viewedTasks.push(taskKey);
+        saveData();
+
+        showScreen('screen-deep-dive');
+        const content = document.getElementById('deep-dive-content');
+        const isComplete = userProfile.progress[taskKey].every(v => v === true);
+
+        content.innerHTML = `
+            <div class="btn-back" onclick="showRoadmap()">< Back</div>
+            <div class="tagline">Implementation Guide</div>
+            <h2>${task.title}</h2>
+            ${isComplete ? '<div style="background:var(--teal); color:#000; padding:10px; border-radius:8px; margin-bottom:20px; font-weight:700; text-align:center;">GOAL COMPLETED!</div>' : ''}
+            <div class="dive-section"><span class="dive-label">The Goal</span><p>${task.goal}</p></div>
+            <div class="dive-section"><span class="dive-label">Recommended Tech</span>${(task.tech || []).map(t=>`<span class="tech-pill">${t}</span>`).join('')}</div>
+            <div class="dive-section"><span class="dive-label">3-Step Checklist</span>
+                <div class="action-list">
+                    ${(task.steps || []).map((s,i) => `
+                        <div class="action-item ${userProfile.progress[taskKey][i] ? 'done' : ''}" onclick="toggleCheck('${taskKey}', ${i}, this)">
+                            <div class="action-check"></div><div class="action-text">${s}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="dive-section">
+                <span class="dive-label">AI Prompt</span>
+                <div class="output-card"><pre id="prompt-task">${(task.prompt || '').replace('[NICHE]', userProfile.niche)}</pre><button class="copy-btn" onclick="copyText('prompt-task')">COPY PROMPT</button></div>
+            </div>
+            <button class="btn-primary" onclick="showRoadmap()">Return to Roadmap</button>
+            <a href="mailto:contact@DavidBee.me" class="btn-help">Message David Bee for help</a>
+        `;
+    }
+
+    function toggleCheck(key, index, el) {
+        userProfile.progress[key][index] = !userProfile.progress[key][index];
+        el.classList.toggle('done'); saveData();
+        if (userProfile.progress[key].every(v => v === true)) {
+            triggerCelebration();
+            const parts = key.split('_'); const compId = parts[0]; const level = parseInt(parts[1]);
+            const qRef = QUESTIONS.find(q => q.id === compId);
+            if (qRef && (!userProfile.answers[compId] || userProfile.answers[compId].depth < level)) {
+                const optRef = qRef.options.find(o => o.depth === level);
+                if(optRef) userProfile.answers[compId] = optRef;
+                saveData(); updatePriority();
+                setTimeout(() => openDeepDive(compId, level), 500);
+            }
+        }
+    }
+
+    function triggerCelebration() { const c = document.getElementById('celebration'); c.style.display = 'block'; setTimeout(() => { c.style.display = 'none'; }, 2000); }
+    function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(userProfile)); }
+    function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
+    function copyText(id) { const el = document.getElementById(id); if(!el) return; navigator.clipboard.writeText(el.textContent).then(() => { const b = event.target; b.innerText = "COPIED"; setTimeout(()=>b.innerText="COPY", 2000); }); }
+    function showTooltip(e, text) { if(window.innerWidth < 768) return; tooltip.textContent = text; tooltip.style.display = 'block'; tooltip.style.left = (e.pageX+10)+'px'; tooltip.style.top = (e.pageY+10)+'px'; }
+    function hideTooltip() { tooltip.style.display = 'none'; }
+    function resetApp() { localStorage.removeItem(STORAGE_KEY); location.reload(); }
+    function renderProfile() {
+        let p = `PROFILE: ${userProfile.name} | ${userProfile.niche}\n----------------------------\n`;
+        QUESTIONS.forEach(q => p += `${q.id.toUpperCase()}: ${userProfile.answers[q.id]?.label || 'None'}\n`);
+        document.getElementById('profile-text').textContent = p;
+    }
+    window.onload = loadData;
+</script>
+</body>
+</html>
